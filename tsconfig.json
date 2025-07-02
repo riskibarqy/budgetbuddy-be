@@ -2,7 +2,6 @@
   "compilerOptions": {
     "target": "ES2020",
     "module": "commonjs",
-    "types": ["express", "node", "jest", "body-parser"],
     "lib": ["ES2020", "DOM"],
     "moduleResolution": "node",
     "allowSyntheticDefaultImports": true,
@@ -12,12 +11,21 @@
     "forceConsistentCasingInFileNames": true,
     "noEmit": true,
     "outDir": "./dist",
-    "rootDir": "./src",
+    "rootDir": ".",
     "baseUrl": "./src",
     "paths": {
       "@/*": ["*"]
-    }
+    },
+    "typeRoots": [
+      "./node_modules/@types",
+      "./src/types"
+    ]
   },
-  "include": ["src/**/*.ts"],
+  "include": [
+    "src/**/*.ts",
+    "src/types/**/*.d.ts",
+    "knexfile.ts",
+    "migrations/**/*.ts"
+  ],
   "exclude": ["node_modules", "dist"]
 }

@@ -1,12 +1,27 @@
 import express from 'express';
 import dotenv from 'dotenv';
-dotenv.config();
-
 import { connectToDatabase, disconnectFromDatabase } from './infrastructure/db/postgres';
 import { connectRedis, disconnectRedis } from './infrastructure/db/redis';
 import { setupLogging } from './infrastructure/logging';
 import { setupAuth } from './infrastructure/auth';
 import routes from './interfaces/routes';
+
+const env = process.env.NODE_ENV || 'local';
+
+switch (env) {
+  case 'production':
+    dotenv.config({ path: '.env.production' });
+    break;
+  case 'development':
+    dotenv.config({ path: '.env.development' });
+    break;
+  default:
+    dotenv.config({ path: '.env' });
+}
+// Ensure environment variables are loaded
+if (!process.env.CLERK_SECRET_KEY || !process.env.CLERK_PUBLISHABLE_KEY) {
+  throw new Error('Missing Clerk environment variables');
+}
 
 const app = express();
 const PORT = process.env.PORT || 3000;
