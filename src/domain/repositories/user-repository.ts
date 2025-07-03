@@ -17,6 +17,7 @@ export class UserRepository {
   async create(user: Omit<User,'created_at' | 'updated_at'>): Promise<User> {
     const [createdUser] = await this.knex('users')
       .insert({
+        id: user.id,
         full_name: user.full_name,
         email: user.email,
         password: user.password,

@@ -50,7 +50,6 @@ public async createUser(userData: User) {
     password: userData.password,        // Use plain password here (Clerk hashes it)
     firstName: full_name,               // If you want to split full_name, do it here
     lastName: full_name,                // Otherwise you might just duplicate
-    // phoneNumber: phone_number ? [phone_number] : undefined,
     username: username || undefined,
   });
 
