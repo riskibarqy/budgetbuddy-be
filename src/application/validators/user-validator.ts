@@ -1,20 +1,19 @@
-// src/application/validators/userValidator.ts
 import { z } from "zod";
 
-// Base user schema
-const baseUserSchema = z.object({
-  name: z.string().min(1, "Name is required"),
-  email: z.string().email("Invalid email address"),
+export const createUserSchema = z.object({
+  email: z.string().email(),
+  username: z.string().min(3).max(30).optional(),
+  password: z.string().min(8), // plain password or hashed? Ideally hashed before saving
+  full_name: z.string().min(1),
+  phone_number: z.string().optional().nullable(),
+  fingerprints: z.array(z.string()).optional().nullable(), // assuming array of strings (e.g. device IDs or hashes)
 });
 
-// For creating user: password required
-export const createUserSchema = baseUserSchema.extend({
-  password: z.string().min(6, "Password must be at least 6 characters"),
+export const updateUserSchema = z.object({
+  // email: z.string().email().optional(),
+  // username: z.string().min(3).max(30).optional(),
+  // password: z.string().min(8).optional(),
+  // full_name: z.string().min(1).optional(),
+  // phone_number: z.string().optional().nullable(),
+  // fingerprints: z.array(z.string()).optional().nullable(),
 });
-
-// For updating user: all optional but validated if present
-export const updateUserSchema = baseUserSchema
-  .partial()
-  .extend({
-    password: z.string().min(6, "Password must be at least 6 characters").optional(),
-  });

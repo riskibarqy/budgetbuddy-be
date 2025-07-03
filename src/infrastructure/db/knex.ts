@@ -4,3 +4,4 @@ import config from '../../../knexfile';
 const environment = process.env.NODE_ENV || 'development';
 
 export const db = knex(config[environment]);
+export const knexInstance = knex(config[environment]);

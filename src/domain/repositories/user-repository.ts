@@ -1,66 +1,80 @@
-import { Pool } from 'pg';
-import { CreateUserDTO, UpdateUserDTO } from '../../application/dtos/user-dtos';
-
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-});
+import { Knex } from 'knex';
+import { User } from '../entities/user';
 
 export class UserRepository {
-  async createUser(data: CreateUserDTO) {
-    const result = await pool.query(
-      `INSERT INTO users (name, email, password)
-       VALUES ($1, $2, $3)
-       RETURNING id, name, email`,
-      [data.name, data.email, data.password]
-    );
-    return result.rows[0];
+  private knex: Knex;
+
+  constructor(knexInstance: Knex) {
+    this.knex = knexInstance;
   }
 
-  async getUserById(id: string) {
-    const result = await pool.query(
-      `SELECT id, name, email FROM users WHERE id = $1`,
-      [id]
-    );
-    return result.rows[0] || null;
+  private mapDbUserToUser(user: User): User {
+    return {
+      ...user,
+    };
   }
 
-  async getAllUsers(limit: number, offset: number) {
-    const result = await pool.query(
-      `SELECT id, name, email FROM users ORDER BY created_at DESC LIMIT $1 OFFSET $2`,
-      [limit, offset]
-    );
-    return result.rows;
+  async create(user: Omit<User,'created_at' | 'updated_at'>): Promise<User> {
+    const [createdUser] = await this.knex('users')
+      .insert({
+        full_name: user.full_name,
+        email: user.email,
+        password: user.password,
+        phone_number: user.phone_number ?? null,
+        username: user.username ?? null,
+        fingerprints: user.fingerprints ? JSON.stringify(user.fingerprints) : null,
+      })
+      .returning('*');
+
+    return this.mapDbUserToUser(createdUser);
   }
 
-  async updateUser(id: string, data: UpdateUserDTO) {
-    const fields = [];
-    const values = [];
-    let index = 1;
+  async getById(id: string): Promise<User | null> {
+    const user = await this.knex('users').where('id', id).first();
+    if (!user) return null;
+    return this.mapDbUserToUser(user);
+  }
 
-    for (const [key, value] of Object.entries(data)) {
-      if (value !== undefined) {
-        fields.push(`${key} = $${index}`);
-        values.push(value);
-        index++;
-      }
+  async getByEmail(email: string): Promise<User | null> {
+    const user = await this.knex('users').where('email', email).first();
+    if (!user) return null;
+    return this.mapDbUserToUser(user);
+  }
+
+  async getByUsername(username: string): Promise<User | null> {
+    const user = await this.knex('users').where('username', username).first();
+    if (!user) return null;
+    return this.mapDbUserToUser(user);
+  }
+
+  async update(
+    id: string,
+    updates: Partial<Omit<User, 'id' | 'created_at' | 'updated_at'>>
+  ): Promise<User | null> {
+    if (updates.fingerprints) {
+      updates.fingerprints = JSON.stringify(updates.fingerprints);
     }
 
-    if (fields.length === 0) return null;
+    const [updatedUser] = await this.knex('users')
+      .where('id', id)
+      .update({
+        ...updates,
+        updated_at: this.knex.fn.now(),
+      })
+      .returning('*');
 
-    values.push(id); // last parameter is ID
-    const result = await pool.query(
-      `UPDATE users SET ${fields.join(', ')} WHERE id = $${index} RETURNING id, name, email`,
-      values
-    );
-
-    return result.rows[0] || null;
+    if (!updatedUser) return null;
+    return this.mapDbUserToUser(updatedUser);
   }
 
-  async deleteUser(id: string) {
-    const result = await pool.query(
-      `DELETE FROM users WHERE id = $1 RETURNING id`,
-      [id]
-    );
-    return (result?.rowCount ?? 0) > 0;
+  async delete(id: string): Promise<boolean> {
+    const deletedCount = await this.knex('users').where('id', id).del();
+    return deletedCount > 0;
+  }
+
+  async listAll(limit: number, offset : number): Promise<User[]> {
+    const users = await this.knex('users').select('*').limit(limit).offset(offset);
+    console.log('Fetched users:', users);
+    return users.map(this.mapDbUserToUser);
   }
 }
